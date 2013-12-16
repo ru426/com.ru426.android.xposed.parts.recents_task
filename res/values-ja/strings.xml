@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">アプリ履歴画面</string>
+    <string name="app_desc">全アプリ終了ボタンの追加と移動</string>
+    
+    <string name="task_button_settings_title">全アプリ終了ボタン</string>
+    <string name="task_button_settings_summary">全アプリ終了ボタン 設定</string>
+    
+    <string name="move_or_add_kill_all_apps_button_key">MoveOrAddKillAllAppsButtonKey</string>
+    <string name="move_or_add_kill_all_apps_button_title">全アプリ終了ボタン下部表示</string>
+    <string name="move_or_add_kill_all_apps_button_summary">全アプリ終了ボタンを下部に表示する</string>
+    <string name="move_or_add_kill_all_apps_button_z_title">全アプリ終了ボタン 追加</string>
+    <string name="move_or_add_kill_all_apps_button_z_summary">アプリ履歴リストに全アプリ終了ボタン追加する</string>
+    
+    <string name="close_all_apps_button_txt">全アプリ終了</string>
+    <string name="close_suspended_apps_toast_txt">全てのアプリケーションを終了しました</string>
+</resources>

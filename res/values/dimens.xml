@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="task_killer_button_width">110.0dip</dimen>
+    <dimen name="task_killer_button_height">50.0dip</dimen>
+    <dimen name="task_killer_button_layout_padding_top">35.0dip</dimen>
+    <dimen name="task_killer_button_layout_padding_left">10.0dip</dimen>
+</resources>

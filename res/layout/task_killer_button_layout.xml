@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/task_killer_button_layout"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <View
+        android:id="@+id/button_paddingtop"
+        android:layout_width="fill_parent"
+        android:layout_height="0.0dip"
+        android:layout_weight="1.0" />
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/button_paddingtop" >
+
+        <Button
+            android:id="@+id/task_killer_button"
+            android:layout_width="@dimen/task_killer_button_width"
+            android:layout_height="@dimen/task_killer_button_height"
+            android:layout_marginBottom="@dimen/task_killer_button_layout_padding_top"
+            android:layout_marginLeft="@dimen/task_killer_button_layout_padding_left"
+            android:layout_marginTop="@dimen/task_killer_button_layout_padding_top"
+            android:text="@string/close_all_apps_button_txt"
+            android:textAppearance="?android:textAppearanceButton" />
+    </RelativeLayout>
+
+</LinearLayout>

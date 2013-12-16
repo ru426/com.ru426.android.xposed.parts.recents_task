@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:settings="http://schemas.android.com/apk/res/com.ru426.android.xposed.gxmod_extender"
+    xmlns:xSeekBarPreferece="http://schemas.android.com/apk/res/com.ru426.android.xposed.gxmod_extender" >
+
+    <PreferenceCategory
+        android:summary="@string/task_button_settings_summary"
+        android:title="@string/task_button_settings_title" >
+        <CheckBoxPreference
+            android:key="@string/move_or_add_kill_all_apps_button_key"
+            android:summary="@string/move_or_add_kill_all_apps_button_summary"
+            android:title="@string/move_or_add_kill_all_apps_button_title" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

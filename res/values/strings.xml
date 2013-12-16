@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Recents Task View</string>
+    <string name="app_desc">Add kill all app task button and move it</string>
+    
+    <string name="task_button_settings_title">Task Kill Button</string>
+    <string name="task_button_settings_summary">Task Kill Button Settings</string>
+    
+    <string name="move_or_add_kill_all_apps_button_key">MoveOrAddKillAllAppsButtonKey</string>
+    <string name="move_or_add_kill_all_apps_button_title">Lower kill all apps button</string>
+    <string name="move_or_add_kill_all_apps_button_summary">Move the kill all apps button low in TaskSwitcher</string>
+    <string name="move_or_add_kill_all_apps_button_z_title">Add kill all apps button</string>
+    <string name="move_or_add_kill_all_apps_button_z_summary">Add the kill all apps button in Recents app list</string>
+    
+    <string name="close_all_apps_button_txt">Close all</string>
+    <string name="close_suspended_apps_toast_txt">All apps closed</string>
+    
+</resources>

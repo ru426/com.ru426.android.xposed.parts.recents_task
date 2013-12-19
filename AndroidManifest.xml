@@ -3,8 +3,8 @@
     package="com.ru426.android.xposed.parts.recents_task"
     android:installLocation="internalOnly"
     android:sharedUserId="com.ru426.android.xposed.regxm"
-    android:versionCode="2"
-    android:versionName="1.0.1" >
+    android:versionCode="3"
+    android:versionName="1.0.2" >
     <!-- android:sharedUserId="com.ru426.android.xposed.regxm" -->
 
     <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="18" />

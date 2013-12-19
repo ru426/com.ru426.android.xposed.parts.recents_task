@@ -1,5 +1,7 @@
 package com.ru426.android.xposed.parts.recents_task;
 
+import com.ru426.android.xposed.parts.recents_task.util.XUtil;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -60,8 +62,10 @@ public class Settings extends PreferenceActivity {
 		@SuppressWarnings("deprecation")
 		CheckBoxPreference pref = (CheckBoxPreference) findPreference(key);
 		if (Build.VERSION_CODES.JELLY_BEAN_MR1 <= Build.VERSION.SDK_INT) {
-			pref.setTitle(R.string.move_or_add_kill_all_apps_button_z_title);
-			pref.setSummary(R.string.move_or_add_kill_all_apps_button_z_summary);
+			if(!(Boolean) XUtil.getSystemUIValue(mContext, "recents_inject_closeall_button", "id").get("isExists")){
+				pref.setTitle(R.string.move_or_add_kill_all_apps_button_z_title);
+				pref.setSummary(R.string.move_or_add_kill_all_apps_button_z_summary);
+			}
 		} else if (Build.VERSION_CODES.ICE_CREAM_SANDWICH <= Build.VERSION.SDK_INT
 				&& Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
 		}
@@ -95,14 +99,10 @@ public class Settings extends PreferenceActivity {
 		public boolean onPreferenceChange(Preference preference, Object newValue) {
 			Intent intent = new Intent();
 			switch(preference.getTitleRes()){
-			case R.string.move_or_add_kill_all_apps_button_title:				
+			case R.string.move_or_add_kill_all_apps_button_title:
+			case R.string.move_or_add_kill_all_apps_button_z_title:
 				intent.setAction(TaskswitcherModule.STATE_CHANGE);
 				intent.putExtra(TaskswitcherModule.STATE_EXTRA_IS_MOVE_OR_ADD, (Boolean) newValue);
-				mContext.sendBroadcast(intent);
-				break;
-			case R.string.move_or_add_kill_all_apps_button_z_title:
-				intent.setAction(RecentsActivityModule.STATE_CHANGE);
-				intent.putExtra(RecentsActivityModule.STATE_EXTRA_IS_MOVE_OR_ADD, (Boolean) newValue);
 				mContext.sendBroadcast(intent);
 				break;
 			default:

@@ -1,9 +1,11 @@
 package com.ru426.android.xposed.parts.recents_task;
 
+import java.util.HashMap;
 import java.util.List;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RecentTaskInfo;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -16,8 +18,10 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import com.ru426.android.xposed.library.ModuleBase;
+import com.ru426.android.xposed.parts.recents_task.util.XUtil;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam;
@@ -29,19 +33,18 @@ import de.robv.android.xposed.XposedHelpers.ClassNotFoundError;
 public class RecentsActivityModule extends ModuleBase {
 	public static final String PACKAGE_NAME = RecentsActivityModule.class.getPackage().getName();
 	private static final String TAG = RecentsActivityModule.class.getSimpleName();
-	public static final String STATE_CHANGE = RecentsActivityModule.class.getName() + ".intent.action.STATE_CHANGE";
-	public static final String STATE_EXTRA_IS_MOVE_OR_ADD = RecentsActivityModule.class.getName() + ".intent.extra.STATE_EXTRA_IS_MOVE_OR_ADD";
 	
 	private static LinearLayout mTaskButtonContainer;
 	private static FrameLayout mRecentsPanel;
 	private static int recents_pluginview_container_id = -1;
 	private static boolean isMoveOrAdd;
 	
+	private static Class<?> xRecentsActivity = null;
+	
 	@Override
 	public void init(XSharedPreferences prefs, ClassLoader classLoader, boolean isDebug) {
 		super.init(prefs, classLoader, isDebug);
-		isMoveOrAdd = (Boolean) xGetValue(prefs, xGetString(R.string.move_or_add_kill_all_apps_button_key), false);
-		Class<?> xRecentsActivity = null;
+		isMoveOrAdd = (Boolean) xGetValue(prefs, xGetString(R.string.move_or_add_kill_all_apps_button_key), false);		
 		try{
 			xRecentsActivity = XposedHelpers.findClass("com.android.systemui.recent.RecentsActivity", classLoader);
 		}catch(ClassNotFoundError e){
@@ -73,12 +76,12 @@ public class RecentsActivityModule extends ModuleBase {
 				try{
 					xLog(TAG + " : " + "afterHookedMethod onCreate");
 					mContext = (Context) param.thisObject;
-					if(mContext != null){
+					if(mContext != null && mContext.getResources() != null){
 						recents_pluginview_container_id = mContext.getResources().getIdentifier("recents_pluginview_container", "id", mContext.getPackageName());
 						if(recents_pluginview_container_id > 0){
 							IntentFilter intentFilter = new IntentFilter();
-							intentFilter.addAction(STATE_CHANGE);
-							xRegisterReceiver(mContext, intentFilter);
+							intentFilter.addAction(TaskswitcherModule.STATE_CHANGE);
+							mContext.registerReceiver(xModuleReceiver, intentFilter);
 						}				
 					}
 				} catch (Throwable throwable) {
@@ -87,6 +90,28 @@ public class RecentsActivityModule extends ModuleBase {
 			}	
 		};
 		xHookMethod(xRecentsActivity, "onCreate", callback2, true);
+		
+		Object callback3[] = new Object[1];
+		callback3[0] = new XC_MethodHook() {			
+			@Override
+			protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+				super.beforeHookedMethod(param);
+				try{
+					xLog(TAG + " : " + "beforeHookedMethod onDestroy");
+					mContext.unregisterReceiver(xModuleReceiver);
+					if(mTaskButtonContainer.getParent() != null){
+						ViewGroup parent = (ViewGroup) mTaskButtonContainer.getParent();
+						parent.removeView(mTaskButtonContainer);
+					}
+					mTaskButtonContainer = null;
+					mRecentsPanel = null;
+					mContext = null;
+				} catch (Throwable throwable) {
+					XposedBridge.log(throwable);
+				}	
+			}
+		};
+		xHookMethod(xRecentsActivity, "onDestroy", callback3, true);
 	}
 	
 	private static void moveKillAllAppsButton(MethodHookParam param){
@@ -97,51 +122,97 @@ public class RecentsActivityModule extends ModuleBase {
 	
 	private static boolean makeTaskButtonContainer(MethodHookParam param, Context context){
 		if(!isMoveOrAdd) return false;
-		try{
+		if(XposedHelpers.getObjectField(param.thisObject, "mRecentsPanel") != null){
 			mRecentsPanel = (FrameLayout) XposedHelpers.getObjectField(param.thisObject, "mRecentsPanel");
-		}catch(Exception e){
-			XposedBridge.log(e);
 		}
 		
-		if(mTaskButtonContainer == null){
-			mTaskButtonContainer = (LinearLayout) makeRecentsActivityTaskController(context);
-			LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
-			mTaskButtonContainer.setPadding(0, 16, 0, 160);
-			mTaskButtonContainer.setLayoutParams(params);
-			Button taskKillerButton = (Button) mTaskButtonContainer.findViewById(xModuleResources.getIdentifier("task_killer_button", "id", PACKAGE_NAME));
-			taskKillerButton.setOnClickListener(new OnClickListener() {				
-				@Override
-				public void onClick(View v) {
-					killTasks();
-					try{
-						XposedHelpers.callMethod(mRecentsPanel, "refreshViews");
-						XposedHelpers.callMethod(mRecentsPanel, "dismissAndGoBack");
-					}catch(Exception e){
-						XposedBridge.log(e);
-					}
+		if(mRecentsPanel != null){
+			HashMap<String, Object> sysValue = XUtil.getSystemUIValue(mContext, "recents_inject_closeall_button", "id");
+			if(!(Boolean) sysValue.get("isExists")){
+				if(mTaskButtonContainer == null){
+					mTaskButtonContainer = (LinearLayout) makeRecentsActivityTaskController(context, R.layout.task_killer_button_layout);
+					LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+					FrameLayout sPluginView = (FrameLayout) XposedHelpers.getStaticObjectField(xRecentsActivity, "sPluginView");
+					int initialHeight = (Integer) XposedHelpers.callMethod(sPluginView, "getInitialHeight");
+					mTaskButtonContainer.setPadding(0, 16, 0, initialHeight);
+					mTaskButtonContainer.setLayoutParams(params);
+					Button taskKillerButton = (Button) mTaskButtonContainer.findViewById(xModuleResources.getIdentifier("task_killer_button", "id", PACKAGE_NAME));
+					taskKillerButton.setOnClickListener(new OnClickListener() {				
+						@Override
+						public void onClick(View v) {
+							killTasks();
+							try{
+								XposedHelpers.callMethod(mRecentsPanel, "refreshViews");
+								XposedHelpers.callMethod(mRecentsPanel, "dismissAndGoBack");
+							}catch(Exception e){
+								XposedBridge.log(e);
+							}
+						}
+					});
 				}
-			});
-		}
 
-		if(mTaskButtonContainer.getParent() != null){
-			ViewGroup parent = (ViewGroup) mTaskButtonContainer.getParent();
-			parent.removeView(mTaskButtonContainer);
+				if(mTaskButtonContainer.getParent() != null){
+					ViewGroup parent = (ViewGroup) mTaskButtonContainer.getParent();
+					parent.removeView(mTaskButtonContainer);
+				}
+				int index = 0;
+				if(mRecentsPanel.getChildCount() > 0){
+					index = mRecentsPanel.getChildCount() - 1;
+				}
+				mRecentsPanel.removeView(mTaskButtonContainer);
+				mRecentsPanel.addView(mTaskButtonContainer, index);
+			}else{
+				// isExists
+				if(mTaskButtonContainer == null){
+					mTaskButtonContainer = (LinearLayout) makeRecentsActivityTaskController(context, R.layout.task_killer_button_layout_z);
+					LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+					FrameLayout sPluginView = (FrameLayout) XposedHelpers.getStaticObjectField(xRecentsActivity, "sPluginView");
+					int initialHeight = (Integer) XposedHelpers.callMethod(sPluginView, "getInitialHeight");
+					mTaskButtonContainer.setPadding(0, 16, 0, initialHeight);
+					mTaskButtonContainer.setLayoutParams(params);
+				}
+				if(mTaskButtonContainer.getParent() != null){
+					ViewGroup parent = (ViewGroup) mTaskButtonContainer.getParent();
+					parent.removeView(mTaskButtonContainer);
+				}
+				int id = sysValue.get("id") == null ? 0 : (Integer) sysValue.get("id");
+				View killButton = null;
+				if (id > 0) {
+					killButton = mRecentsPanel.findViewById(id);
+					if (killButton.getParent() != null) {
+						ViewGroup parent = (ViewGroup) killButton.getParent();
+						parent.removeView(killButton);
+					}
+					RelativeLayout container = (RelativeLayout) mTaskButtonContainer.findViewById(R.id.task_killer_button_container);
+					container.addView(killButton);
+
+					int index = 1;
+					if (killButton.getParent() != null) {
+						ViewGroup parent = (ViewGroup) killButton.getParent();
+						for (int i = 0; i < parent.getChildCount(); i++) {
+							if (parent.getChildAt(i).getId() == id) {
+								index = i;
+								break;
+							}
+						}
+					}
+
+					mRecentsPanel.removeView(mTaskButtonContainer);
+					mRecentsPanel.addView(mTaskButtonContainer, index);
+				} else
+					return false;
+			}
+			return true;
 		}
-		int index = 0;
-		if(mRecentsPanel.getChildCount() > 0){
-			index = mRecentsPanel.getChildCount() - 1;
-		}
-		mRecentsPanel.removeView(mTaskButtonContainer);
-		mRecentsPanel.addView(mTaskButtonContainer, index);
-		return true;
+		return false;
 	}
 	
-	private static View makeRecentsActivityTaskController(Context context){
+	private static View makeRecentsActivityTaskController(Context context, int layout){
 		Context mContext = null;
 		View view = null;
 		try {
 			mContext = context.createPackageContext(PACKAGE_NAME, 3);
-			view = View.inflate(mContext, R.layout.task_killer_button_layout, null);
+			view = View.inflate(mContext, layout, null);
 		} catch (NameNotFoundException e) {
 			XposedBridge.log(e);
 		}
@@ -149,7 +220,7 @@ public class RecentsActivityModule extends ModuleBase {
 	}
 	
 	private static void moveKillAllAppsButtonCore(){
-		if(mTaskButtonContainer != null){
+		if(mTaskButtonContainer != null && mTaskButtonContainer.findViewById(xModuleResources.getIdentifier("button_paddingtop", "id", PACKAGE_NAME)) != null){
 			mTaskButtonContainer.findViewById(xModuleResources.getIdentifier("button_paddingtop", "id", PACKAGE_NAME)).setVisibility(isMoveOrAdd ? View.VISIBLE : View.GONE);
 		}
 	}
@@ -183,13 +254,14 @@ public class RecentsActivityModule extends ModuleBase {
 		return flag;
 	}
 
-	@Override
-	protected void xOnReceive(Context context, Intent intent) {
-		super.xOnReceive(context, intent);
-		xLog(TAG + " : " + intent.getAction());
-		if (intent.getAction().equals(STATE_CHANGE)) {
-			isMoveOrAdd = intent.getBooleanExtra(STATE_EXTRA_IS_MOVE_OR_ADD, false);
-			moveKillAllAppsButtonCore();
+	private static BroadcastReceiver xModuleReceiver = new BroadcastReceiver() {		
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			XposedBridge.log(TAG + " : " + intent.getAction());
+			if (intent.getAction().equals(TaskswitcherModule.STATE_CHANGE)) {
+				isMoveOrAdd = intent.getBooleanExtra(TaskswitcherModule.STATE_EXTRA_IS_MOVE_OR_ADD, false);
+				moveKillAllAppsButtonCore();
+			}
 		}
-	}
+	};
 }

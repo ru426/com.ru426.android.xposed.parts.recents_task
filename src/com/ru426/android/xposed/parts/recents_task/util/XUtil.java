@@ -1,11 +1,30 @@
 package com.ru426.android.xposed.parts.recents_task.util;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager.NameNotFoundException;
 
 public class XUtil {
+	public static HashMap<String, Object> getSystemUIValue(Context context, String value, String type){
+		if(context == null) return null;
+		HashMap<String, Object> result = new HashMap<String, Object>();
+		Context mContext = null;
+		int id = 0;
+		try {
+			mContext = context.createPackageContext("com.android.systemui", Context.CONTEXT_RESTRICTED);
+			id = mContext.getResources().getIdentifier(value, type, mContext.getPackageName());
+			result.put("id", id);
+			result.put("isExists", id > 0);
+			return result;
+		} catch (NameNotFoundException e) {
+			return null;
+		}
+ 	}
+	
 	public static void copyPreferences(SharedPreferences source, SharedPreferences target, String sourceKey){
 		Map<String, ?> pluginPrefAll = source.getAll();
 		if(sourceKey == null || sourceKey.length() == 0){

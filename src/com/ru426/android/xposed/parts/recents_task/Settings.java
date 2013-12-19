@@ -1,11 +1,16 @@
 package com.ru426.android.xposed.parts.recents_task;
 
+import java.util.HashMap;
+import java.util.List;
+
 import com.ru426.android.xposed.parts.recents_task.util.XUtil;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -62,7 +67,11 @@ public class Settings extends PreferenceActivity {
 		@SuppressWarnings("deprecation")
 		CheckBoxPreference pref = (CheckBoxPreference) findPreference(key);
 		if (Build.VERSION_CODES.JELLY_BEAN_MR1 <= Build.VERSION.SDK_INT) {
-			if(!(Boolean) XUtil.getSystemUIValue(mContext, "recents_inject_closeall_button", "id").get("isExists")){
+			HashMap<String, Object> sysValue = XUtil.getSystemUIValue(mContext, "recents_inject_closeall_button", "id");
+			boolean sysValueIsExists = sysValue != null && (Boolean) sysValue.get("isExists");
+			boolean taskKillerAppIsInstalled = getIsInstalled(mContext, "com.sonymobile.taskkiller", ".TaskKillerViewTestActivity");
+			
+			if(!sysValueIsExists | !taskKillerAppIsInstalled){
 				pref.setTitle(R.string.move_or_add_kill_all_apps_button_z_title);
 				pref.setSummary(R.string.move_or_add_kill_all_apps_button_z_summary);
 			}
@@ -111,4 +120,22 @@ public class Settings extends PreferenceActivity {
 			return true;
 		}		
 	};
+	
+	public static boolean getIsInstalled(Context context, String packageName, String activityName){
+		try{
+			boolean isExists = false;
+	        Intent intent = new Intent();
+	        intent.setClassName(packageName, packageName + activityName);
+	        intent.setAction(Intent.ACTION_MAIN);
+	        intent.addCategory(Intent.CATEGORY_MONKEY);
+	        PackageManager packageManager = context.getPackageManager();
+	        List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(intent,PackageManager.MATCH_DEFAULT_ONLY);
+	        if(resolveInfos.size() > 0)//when uninstalled or frozen : 0; when installed : 1; 
+	            isExists = true;
+	        return isExists;
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+        return false;
+    }
 }

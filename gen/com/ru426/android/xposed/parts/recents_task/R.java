@@ -22,7 +22,6 @@ public final class R {
     public static final class id {
         public static final int button_paddingtop=0x7f080001;
         public static final int task_killer_button=0x7f080002;
-        public static final int task_killer_button_container=0x7f080003;
         public static final int task_killer_button_layout=0x7f080000;
     }
     public static final class layout {
